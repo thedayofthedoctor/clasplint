@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "CLASPLint"
+version = "0.1.0"
+description = "CLASP 3.0 / PEP 2606 Static Analysis Tool — enforces naming and comment conventions beyond PEP 8."
+readme = "README.md"
+license = {text = "GPL-3.0"}
+authors = [
+    {name = "Matt Belfast Brown", email = "thedayofthedo@gmail.com"},
+]
+keywords = [
+    "clasp",
+    "pep2606",
+    "linter",
+    "static-analysis",
+    "naming-convention",
+    "code-quality",
+    "python",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.8"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/thedayofthedoctor/clasplint"
+Repository = "https://github.com/thedayofthedoctor/clasplint"
+Issues = "https://github.com/thedayofthedoctor/clasplint/issues"
+
+[project.scripts]
+CLASPLint = "CLASPLint.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["CLASPLint*"]
+
+[tool.setuptools]
+zip-safe = true
