@@ -2,7 +2,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](./LICENSE)
-[![PyPI](https://img.shields.io/badge/pypi-v0.1.0-orange)](https://pypi.org/project/CLASPLint/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.2.0-orange)](https://pypi.org/project/CLASPLint/)
 
 > **CLASP 3.0 / PEP 2606** static analysis tool. Enforces naming and comment conventions **beyond PEP 8** — checks variables, dictionary keys, functions, classes, comments, and log messages for standards compliance.
 
@@ -110,7 +110,7 @@ CLASPLint supports **Python 3.8 through 3.13+**. The minimum version is 3.8 due 
 
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPLv3+-green)](./LICENSE)
-[![PyPI](https://img.shields.io/badge/pypi-v0.1.0-orange)](https://pypi.org/project/CLASPLint/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.2.0-orange)](https://pypi.org/project/CLASPLint/)
 
 > **CLASP 3.0 / PEP 2606** 静态分析工具。在 PEP 8 **之上**强制执行命名与注释规范 —— 检查变量、字典键、函数、类、注释和日志消息是否符合标准。
 
