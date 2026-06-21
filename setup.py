@@ -7,7 +7,6 @@ setup(
     description="CLASP 3.0 / PEP 2606 Static Analysis Tool",
     
     author_email="thedayofthedo@gmail.com",
-    license="GPL-3.0-only",
     
     keywords = ["CLASP", "pep2606", "Linter", "static-analysis", "naming-convention", "code-quality", "python"],
     packages=find_packages(),
