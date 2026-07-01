@@ -2,9 +2,9 @@
 
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-GPLv3-green)](./LICENSE)
-[![PyPI](https://img.shields.io/badge/pypi-v0.2.0-orange)](https://pypi.org/project/CLASPLint/)
+[![PyPI](https://img.shields.io/badge/pypi-v0.3.0-orange)](https://pypi.org/project/CLASPLint/)
 
-> **CLASP 3.0 / PEP 2606** static analysis tool. Enforces naming and comment conventions **beyond PEP 8** — checks variables, dictionary keys, functions, classes, comments, and log messages for standards compliance.
+> **CLASP 3.1.1 / PEP 2606** static analysis tool. Enforces naming and comment conventions **beyond PEP 8** — checks variables, dictionary keys, functions, classes, comments, and log messages for standards compliance.
 
 ---
 
@@ -16,6 +16,13 @@
 - **Comment format** — every physical code line requires `# Capitalized sentence.` comment (import/class/def exempt)
 - **Log messages** — pre-defined string variables, proper `try-except` chains, `exc_info=True` on errors
 - **Docstrings** — presence check for all functions and classes; Sphinx `:param/:type/:return` format enforcement for methods with detailed description requirement
+- **Encoding declaration** — file header must contain `# -*- coding: utf-8 -*-`
+- **Single-line comments** — each `#` comment is a self-contained sentence; multi-line comment blocks are forbidden
+- **Symbol-line exemption** — pure-symbol lines (only non-letter characters) are exempt from comment requirements and must not carry comments
+- **Comment quality** — detects weak comments that merely restate code rather than explain intent
+- **Comment language** — all comments must be written in English
+- **Log quality** — log message variable names must follow `group1_group2` format; log message content must be in Chinese
+- **Docstring quality** — file-level docstrings must follow CLASP format; class docstrings must list public/private methods; docstring text is checked for capitalization, punctuation, and abbreviations
 
 ## Installation
 
@@ -80,7 +87,7 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
   ...
 ```
 
-## CLASP 3.0 / PEP 2606 Rules Summary
+## CLASP 3.1.1 / PEP 2606 Rules Summary
 
 | Category   | Rule |
 |------------|------|
@@ -93,10 +100,19 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
 | Comment    | Every physical line: `# Capitalized sentence ending with period.` (import/class/def exempt) |
 | Log        | Messages as variables, proper `try-except` logging chain, `exc_info=True` |
 | Docstring  | Presence required; Sphinx `:param/:type/:return` format for methods with detail section |
+| Encoding   | `# -*- coding: utf-8 -*-` required at file top (line 1 or 2 after shebang) |
+| Symbol Line| Pure-symbol lines (no letters) are comment-exempt and must not carry comments |
+| Multi-line | Each comment must be a single self-contained line; blocks are forbidden |
+| Weak Comment| Comments must explain intent, not paraphrase conditions (no "Check if...") |
+| Comment Lang| All comments must be in English (ASCII only) |
+| Log Lang   | Log messages must be in Chinese |
+| Log Variable| Log message variables must follow `group1_group2` naming format |
+| File Doc   | File-level docstring with project, author, version, license metadata |
+| Class Doc  | Class docstring must list Public methods and Private methods sections |
 
 ## Python Version Support
 
-CLASPLint supports **Python 3.8 through 3.13+**. The minimum version is 3.8 due to `ast.Constant`, `ast.NamedExpr`, and `ast.get_docstring()` usage.
+CLASPLint supports **Python 3.8 through 3.14**. The minimum version is 3.8 due to `ast.Constant`, `ast.NamedExpr`, and `ast.get_docstring()` usage.
 
 ## License
 
@@ -111,10 +127,10 @@ CLASPLint supports **Python 3.8 through 3.13+**. The minimum version is 3.8 due 
 # CLASPLint（中文）
 
 [![Python](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue)](https://www.python.org/)
-[![License](https://img.shields.io/badge/license-GPLv3+-green)](./LICENSE)
-[![PyPI](https://img.shields.io/badge/pypi-v0.2.0-orange)](https://pypi.org/project/CLASPLint/)
+[![License](https://img.shields.io/badge/license-GPLv3-green)](./LICENSE)
+[![PyPI](https://img.shields.io/badge/pypi-v0.3.0-orange)](https://pypi.org/project/CLASPLint/)
 
-> **CLASP 3.0 / PEP 2606** 静态分析工具。在 PEP 8 **之上**强制执行命名与注释规范 —— 检查变量、字典键、函数、类、注释和日志消息是否符合标准。
+> **CLASP 3.1.1 / PEP 2606** 静态分析工具。在 PEP 8 **之上**强制执行命名与注释规范 —— 检查变量、字典键、函数、类、注释和日志消息是否符合标准。
 
 ---
 
@@ -126,6 +142,13 @@ CLASPLint supports **Python 3.8 through 3.13+**. The minimum version is 3.8 due 
 - **注释格式** —— 每条物理代码行前必须有 `# 首字母大写英文句子并以句号结尾。`（import/class/def 豁免）
 - **日志消息** —— 必须预定义为字符串变量，完整的 `try-except` 链条，错误日志带 `exc_info=True`
 - **文档字符串** —— 函数和类必须存在；方法需遵循 Sphinx `:param/:type/:return` 格式，并包含详细逻辑描述段落
+- **编码声明** —— 文件头必须包含 `# -*- coding: utf-8 -*-`
+- **单行注释** —— 每条 `#` 注释为独立单行句子；禁止多行注释块
+- **符号行豁免** —— 纯符号行（仅含非字母字符）免注释且不得带注释
+- **注释质量** —— 检测仅复述代码而非解释意图的弱注释
+- **注释语言** —— 所有注释必须使用英文
+- **日志语言** —— 日志消息必须使用中文；日志变量名须符合 `group1_group2` 格式
+- **文档字符串质量** —— 文件级 docstring 须符合 CLASP 格式；类 docstring 须列出公开/私有方法；检查文本大小写、标点与缩写
 
 ## 安装
 
@@ -190,7 +213,7 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
   ...
 ```
 
-## CLASP 3.0 / PEP 2606 规则速查
+## CLASP 3.1.1 / PEP 2606 规则速查
 
 | 类别       | 规则 |
 |------------|------|
@@ -203,10 +226,19 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
 | 注释       | 每条物理行：`# Capitalized sentence ending with period.`（import/class/def 豁免） |
 | 日志       | 消息预定义为变量，完整 `try-except` 日志链，`exc_info=True` |
 | 文档字符串 | 必须存在；方法需 Sphinx `:param/:type/:return` 格式并包含详细段落 |
+| 编码声明   | 文件顶部须有 `# -*- coding: utf-8 -*-`（第1行或shebang后第2行） |
+| 符号行     | 纯符号行（无字母）免注释且禁止带注释 |
+| 单行注释   | 每条注释为独立单行句子；禁止多行注释块 |
+| 弱注释     | 注释须解释意图，不得仅复述代码（禁止 "Check if..."） |
+| 注释语言   | 所有注释须使用英文（仅 ASCII 字符） |
+| 日志语言   | 日志消息须使用中文 |
+| 日志变量   | 日志消息变量名须符合 `group1_group2` 格式 |
+| 文件文档   | 文件级 docstring 须含项目名、作者、版本、许可证元数据 |
+| 类文档     | 类 docstring 须列出 Public methods 和 Private methods 段 |
 
 ## Python 版本支持
 
-CLASPLint 支持 **Python 3.8 至 3.14+**。最低版本为 3.8，原因在于使用了 `ast.Constant`、`ast.NamedExpr` 和 `ast.get_docstring()`。
+CLASPLint 支持 **Python 3.8 至 3.14**。最低版本为 3.8，原因在于使用了 `ast.Constant`、`ast.NamedExpr` 和 `ast.get_docstring()`。
 
 ## 许可证
 

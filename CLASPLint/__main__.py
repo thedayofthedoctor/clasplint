@@ -1,33 +1,35 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.__main__ — command-line entry point for the CLASP 3.0 static analysis tool.
+CLASPLint.__main__ -- command-line entry point for the CLASP 3.1.1 static analysis tool.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import argparse
 import sys
 import os
+from typing import Optional, Sequence
 
 from .runner import run
 from . import __version__
@@ -40,7 +42,7 @@ def _init_build_parser_function_() -> argparse.ArgumentParser:
         # Set the program name displayed in help text.
         prog="CLASPLint",
         # Provide a description of what the tool does.
-        description="CLASP 3.0 / PEP 2606 static analysis tool. "
+        description="CLASP 3.1.1 / PEP 2606 static analysis tool. "
                     # Continue the description across multiple lines for readability.
                     "Checks variable, dict key, function, class naming "
                     # Complete the tool description with comment and log conventions.
@@ -51,7 +53,7 @@ def _init_build_parser_function_() -> argparse.ArgumentParser:
     parser_result.add_argument(
         # Accept zero or more path strings as positional arguments.
         "paths", nargs="*", default=["."],
-        # Provide the help text for the paths argument.
+        # Provide the help text for the paths' argument.
         help="Python files or directories to check (default: current directory).",
     # Close the first add_argument call.
     )
@@ -93,7 +95,7 @@ def _init_build_parser_function_() -> argparse.ArgumentParser:
     return parser_result
 
 
-def main(argv: list = None) -> int:
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """Execute the CLASPLint analysis and return an exit code (0 = clean, 1 = violations)."""
     # Build and parse command-line arguments.
     parser = _init_build_parser_function_()

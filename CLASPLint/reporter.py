@@ -1,28 +1,29 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.reporter — violation data classes and aggregate report for CLASP 3.0 analysis.
+CLASPLint.reporter -- violation data classes and aggregate report for CLASP 3.1.1 analysis.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from dataclasses import dataclass, field
@@ -33,10 +34,13 @@ from typing import List
 @dataclass
 class Violation:
     """
-    Immutable data container for a single CLASP 3.0 naming or style violation.
+    Immutable data container for a single CLASP 3.1.1 naming or style violation.
 
     Public methods:
         (This is a pure data class with no methods.)
+
+    Private methods:
+        (This is a pure data class with no private methods.)
     """
     # Store the file path where the violation was detected.
     string_filepath: str
@@ -57,10 +61,10 @@ class Report:
     Aggregate lint report collecting violations across one or more analyzed files.
 
     Public methods:
-        record — Append a single violation to the report.
-        summary — Return a human-readable summary string with per-category counts.
-        format_violations — Format all violations as a multi-line terminal display string.
-        has_violations — Property returning True when the report contains violations.
+        record -- Append a single violation to the report.
+        summary -- Return a human-readable summary string with per-category counts.
+        format_violations -- Format all violations as a multi-line terminal display string.
+        has_violations -- Property returning True when the report contains violations.
 
     Private methods:
         (This class has no private methods.)
@@ -105,7 +109,7 @@ class Report:
                 # Format the file count into the summary message.
                 f"CLASPLint: {self.int_fileschecked} file(s) checked. "
                 # Append the no-violations confirmation message.
-                f"No CLASP 3.0 violations found."
+                f"No CLASP 3.1.1 violations found."
             # Close the implicit string concatenation tuple.
             )
         # Build a dictionary counting violations by category.
@@ -182,5 +186,5 @@ class Report:
         :return: True when the internal violations list is non-empty, False otherwise.
         :rtype: bool
         """
-        # Check whether the violations list is non-empty.
+        # Gate conditional display logic so callers only render output when violations exist.
         return len(self.list_violations) > 0

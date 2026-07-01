@@ -1,28 +1,29 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.variable_checker — AST visitor that validates variable names against CLASP 3.0 rules.
+CLASPLint.variable_checker -- AST visitor that validates variable names against CLASP 3.1.1 rules.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import ast
@@ -31,8 +32,6 @@ from typing import List
 from .naming_utils import (
     # Import the main variable name validation function.
     validate_variable_name,
-    # Import the maximum allowed name length constant.
-    length_namemax,
     # Import the set of exempt variable names.
     names_exempt,
 # Close the parenthesized import block.
@@ -42,22 +41,22 @@ from .reporter import Violation
 
 class VariableChecker(ast.NodeVisitor):
     """
-    AST node visitor that enforces CLASP 3.0 variable naming conventions.
+    AST node visitor that enforces CLASP 3.1.1 variable naming conventions.
 
     Public methods:
-        visit_Assign — Validate variable names in plain assignment statements.
-        visit_AnnAssign — Validate variable names in annotated assignment statements.
-        visit_NamedExpr — Validate variable names introduced via the walrus operator.
-        visit_For — Validate loop variable names in for-statement targets.
-        visit_FunctionDef — Validate function parameter names for CLASP 3.0 compliance.
-        visit_With — Validate variable names bound in with-statement clauses.
-        visit_ExceptHandler — Validate exception variable names in except clauses.
-        visit_Global — Validate variable names declared in global statements.
-        visit_Nonlocal — Validate variable names declared in nonlocal statements.
+        visit_Assign -- Validate variable names in plain assignment statements.
+        visit_AnnAssign -- Validate variable names in annotated assignment statements.
+        visit_NamedExpr -- Validate variable names introduced via the walrus operator.
+        visit_For -- Validate loop variable names in for-statement targets.
+        visit_FunctionDef -- Validate function parameter names for CLASP 3.1.1 compliance.
+        visit_With -- Validate variable names bound in with-statement clauses.
+        visit_ExceptHandler -- Validate exception variable names in except clauses.
+        visit_Global -- Validate variable names declared in global statements.
+        visit_Nonlocal -- Validate variable names declared in nonlocal statements.
 
     Private methods:
-        _init_check_name_function_ — Validate a single name and record any violations.
-        _init_walk_target_function_ — Recursively walk assignment targets to extract names.
+        _init_check_name_function_ -- Validate a single name and record any violations.
+        _init_walk_target_function_ -- Recursively walk assignment targets to extract names.
     """
 
     def __init__(self, string_filepath: str, list_sourcelines: List[str]):
@@ -84,7 +83,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def _init_check_name_function_(self, string_name: str, node: ast.AST) -> None:
         """
-        Validate a single variable name against CLASP 3.0 rules and record any violations.
+        Validate a single variable name against CLASP 3.1.1 rules and record any violations.
 
         Skips dunder names, exempt names, and previously checked name-and-line combinations
         before delegating to the validation utility. Each detected issue is collected as a
@@ -104,21 +103,23 @@ class VariableChecker(ast.NodeVisitor):
             # Exit early for exempt variable names.
             return
         # Build a unique key to prevent duplicate checks for the same name and line.
-        tuple_key = (string_name, node.lineno)
+        int_lineno = getattr(node, 'lineno', 0)
+        # Guard against AST nodes that lack a reliable line number.
+        tuple_key = (string_name, int_lineno)
         # Skip if this name-and-line combination has already been checked.
         if tuple_key in self.set_checked:
             # Exit early for already-checked name and line combinations.
             return
         # Mark this name-and-line combination as checked.
         self.set_checked.add(tuple_key)
-        # Run the CLASP 3.0 variable name validation.
+        # Run the CLASP 3.1.1 variable name validation.
         list_issues = validate_variable_name(string_name)
         # Retrieve the source line for contextual output.
         string_sourceline = ""
         # Ensure the line number is within bounds before accessing source lines.
-        if node.lineno and node.lineno <= len(self.list_sourcelines):
+        if int_lineno and int_lineno <= len(self.list_sourcelines):
             # Retrieve the source line at the detected line number.
-            string_sourceline = self.list_sourcelines[node.lineno - 1]
+            string_sourceline = self.list_sourcelines[int_lineno - 1]
         # Append each detected violation to the violations list.
         for string_message in list_issues:
             # Construct a Violation with full file and line context.
@@ -126,7 +127,7 @@ class VariableChecker(ast.NodeVisitor):
                 # Supply the file path where the violation was detected.
                 string_filepath=self.string_filepath,
                 # Supply the line number of the offending variable name.
-                int_linenumber=node.lineno,
+                int_linenumber=int_lineno,
                 # Supply the violation category identifier.
                 string_category="variable",
                 # Supply the human-readable violation message.
@@ -138,7 +139,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_Assign(self, node: ast.Assign) -> None:
         """
-        Check variable names in assignment statements for CLASP 3.0 compliance.
+        Check variable names in assignment statements for CLASP 3.1.1 compliance.
 
         Iterates over all assignment targets in the statement, recursively walking each
         one to extract variable names for validation. The visitor continues into child
@@ -156,7 +157,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         """
-        Check variable names in annotated assignment statements for CLASP 3.0 compliance.
+        Check variable names in annotated assignment statements for CLASP 3.1.1 compliance.
 
         Processes the annotated assignment target if present, recursively extracting and
         validating variable names. The visitor continues traversing child nodes after
@@ -174,10 +175,10 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
         """
-        Check variable names introduced via the walrus operator := for CLASP 3.0 compliance.
+        Check variable names introduced via the walrus operator := for CLASP 3.1.1 compliance.
 
         Extracts the variable name from the walrus operator's target and validates it
-        against CLASP 3.0 rules. Traversal continues into child expressions after name
+        against CLASP 3.1.1 rules. Traversal continues into child expressions after name
         checking.
 
         :param node: The named expression AST node whose target is a variable name.
@@ -190,7 +191,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_For(self, node: ast.For) -> None:
         """
-        Check loop variable names in for-statement targets for CLASP 3.0 compliance.
+        Check loop variable names in for-statement targets for CLASP 3.1.1 compliance.
 
         Extracts loop variable names from the for-loop target, handling both simple names
         and unpacking patterns. The visitor continues into the loop body and else clause
@@ -206,10 +207,10 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         """
-        Check function parameter names for CLASP 3.0 compliance.
+        Check function parameter names for CLASP 3.1.1 compliance.
 
         Checks all parameter categories including positional arguments, keyword-only
-        arguments, *args, and **kwargs for CLASP 3.0 compliance. The visitor continues
+        arguments, *args, and **kwargs for CLASP 3.1.1 compliance. The visitor continues
         into the function body after parameter validation.
 
         :param node: The function definition AST node whose arguments contain parameter names.
@@ -217,7 +218,7 @@ class VariableChecker(ast.NodeVisitor):
         """
         # Check each positional parameter name.
         for node_argument in node.args.args:
-            # Validate the positional parameter name against CLASP 3.0 rules.
+            # Validate the positional parameter name against CLASP 3.1.1 rules.
             self._init_check_name_function_(node_argument.arg, node_argument)
         # Check each keyword-only parameter name.
         for kwnode_argument in node.args.kwonlyargs:
@@ -236,7 +237,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_With(self, node: ast.With) -> None:
         """
-        Check variable names bound in with-statement 'as' clauses for CLASP 3.0 compliance.
+        Check variable names bound in with-statement 'as' clauses for CLASP 3.1.1 compliance.
 
         Iterates over each context manager item and processes any optional variable bindings
         found in 'as' clauses. Recursive walking handles nested unpacking within
@@ -256,7 +257,7 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
         """
-        Check exception variable names in except ... as clauses for CLASP 3.0 compliance.
+        Check exception variable names in except ... as clauses for CLASP 3.1.1 compliance.
 
         Validates the exception variable name bound via the 'as' clause in except handlers.
         The visitor continues into the handler body after the name check.
@@ -273,10 +274,10 @@ class VariableChecker(ast.NodeVisitor):
 
     def visit_Global(self, node: ast.Global) -> None:
         """
-        Check variable names in global declarations for CLASP 3.0 compliance.
+        Check variable names in global declarations for CLASP 3.1.1 compliance.
 
         Iterates over each name declared in the global statement and validates it against
-        CLASP 3.0 naming rules. No child traversal is performed since global declarations
+        CLASP 3.1.1 naming rules. No child traversal is performed since global declarations
         contain no nested nodes.
 
         :param node: The global declaration AST node whose names list contains variable names.
@@ -284,15 +285,15 @@ class VariableChecker(ast.NodeVisitor):
         """
         # Validate each name declared as global.
         for string_name in node.names:
-            # Check the global variable name against CLASP 3.0 rules.
+            # Check the global variable name against CLASP 3.1.1 rules.
             self._init_check_name_function_(string_name, node)
 
     def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
         """
-        Check variable names in nonlocal declarations for CLASP 3.0 compliance.
+        Check variable names in nonlocal declarations for CLASP 3.1.1 compliance.
 
         Iterates over each name declared in the nonlocal statement and validates it against
-        CLASP 3.0 naming rules. No child traversal is performed since nonlocal declarations
+        CLASP 3.1.1 naming rules. No child traversal is performed since nonlocal declarations
         contain no nested nodes.
 
         :param node: The nonlocal declaration AST node whose names list contains variable names.
@@ -300,7 +301,7 @@ class VariableChecker(ast.NodeVisitor):
         """
         # Validate each name declared as nonlocal.
         for string_name in node.names:
-            # Check the nonlocal variable name against CLASP 3.0 rules.
+            # Check the nonlocal variable name against CLASP 3.1.1 rules.
             self._init_check_name_function_(string_name, node)
 
     def _init_walk_target_function_(self, target: ast.AST) -> None:

@@ -1,32 +1,33 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.naming_utils — naming validation utilities and lookup tables for CLASP 3.0 rules.
+CLASPLint.naming_utils -- naming validation utilities and lookup tables for CLASP 3.1.1 rules.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 import re
 
-# Define the set of well-known acronyms allowed in lowercase form within variable and function names.
+# Define well-known acronyms allowed in lowercase form within variable and function names.
 acronyms_lowercase = frozenset({
 # Include geospatial positioning and data format acronyms.
     "gps", "utm", "xmp", "gdal", "epsg", "xml",
@@ -167,8 +168,7 @@ prefixes_validtype = frozenset({
 # Define the set of boolean-specific prefixes for variable names.
 prefixes_boolean = frozenset({"is", "has"})
 
-# Define the set of vague verbs that trigger a warning in function names.
-# "run" and "start" are explicitly permitted as concise public method names per CLASP 3.0.
+# Vague verbs that trigger function name warnings; "run" and "start" are exempt per CLASP 3.1.1.
 verbs_vague = frozenset({
 # Include general action verbs considered too vague.
     "process", "handle", "manage", "do", "execute",
@@ -181,9 +181,7 @@ verbs_vague = frozenset({
 # Close the verbs_vague frozenset literal.
 })
 
-# Define variable names exempt from checking due to Python built-in conventions.
-# "node" is exempt as it is the standard AST visitor pattern parameter name.
-# Short utility parameter names are exempt as they serve single obvious purposes.
+# Variable names exempt from checking: standard conventions, AST visitor "node", utility names.
 names_exempt = frozenset({
 # Include standard instance and class parameter names.
     "self", "cls",
@@ -196,17 +194,26 @@ names_exempt = frozenset({
 # Close the names_exempt frozenset literal.
 })
 
-# Define compound names exempt from abbreviation checking due to domain-specific semantics.
-# Log level terms (debug, info, warning, error, critical) are standard Python logging names.
-# These are not abbreviations when used as the second group after a descriptive prefix.
+# Compound names exempt from abbreviation checking: log level terms are not abbreviations.
 compound_exemptions = frozenset({
 # Include logging level compound names exempt from abbreviation checking.
     "message_info", "message_debug", "message_warning", "message_error", "message_critical",
 # Close the compound_exemptions frozenset literal.
 })
 
-# Define the maximum allowed character length for variable and function names.
-length_namemax = 30
+# Maximum name length, wrapped in a class to avoid pylint module-constant naming conflict.
+class CLASPDefaults:
+    """
+    Default configuration values for CLASP 3.1.1 naming conventions.
+
+    Public methods:
+        (This class only contains class-level constants.)
+
+    Private methods:
+        (This class has no private methods.)
+    """
+    # Store the maximum allowed character length for variable and function names.
+    length_namemax = 30
 
 
 def is_underscore_single(name: str) -> bool:
@@ -243,7 +250,7 @@ def detect_abbreviations(name: str) -> list:
         if group_name == "init" and name.startswith("_init_"):
             # Proceed to the next group without flagging the init prefix part.
             continue
-        # Check if the current group matches a forbidden abbreviation.
+        # Detect if this group uses a forbidden abbreviation in need of expansion.
         if group_name in abbreviations_forbidden:
             # Append the abbreviation and its full form to the violations list.
             list_violations.append((group_name, abbreviations_forbidden[group_name]))
@@ -254,7 +261,7 @@ def detect_abbreviations(name: str) -> list:
 def validate_namelength(name: str) -> bool:
     """Return True if the name does not exceed the maximum allowed length."""
     # Compare the name length against the maximum allowed length.
-    return len(name) <= length_namemax
+    return len(name) <= CLASPDefaults.length_namemax
 
 
 def is_pascal_case(name: str) -> bool:
@@ -291,8 +298,7 @@ def validate_dictkey_format(key: str) -> list:
     """
     # Initialize an empty list to collect dict key violations.
     list_violations = []
-    # Exempt single lowercase word keys that represent lookup data values.
-    # Per CLASP §二.第六, these are not configuration names requiring PascalCase.
+    # Exempt single lowercase word keys per CLASP Section 2 Rule 6 since they are lookup values.
     if key == key.lower() and "_" not in key:
         # Return an empty list for lookup-table keys that don't need PascalCase.
         return list_violations
@@ -310,7 +316,7 @@ def validate_dictkey_format(key: str) -> list:
     for word_item in list_words:
         # Convert the word to lowercase for abbreviation lookup.
         string_lower = word_item.lower()
-        # Check if the lowercase word is a known forbidden abbreviation.
+        # Detect whether this word is a recognized abbreviation requiring full-word replacement.
         if string_lower in abbreviations_forbidden:
             # Record a violation with the abbreviation and its correct full form.
             list_violations.append(
@@ -331,7 +337,7 @@ def is_private_method_format(name: str) -> bool:
 
 
 def validate_variable_name(name: str) -> list:
-    """Validate a variable name against CLASP 3.0 rules.
+    """Validate a variable name against CLASP 3.1.1 rules.
     Returns a list of violation message strings (empty if valid).
     """
     # Initialize an empty list to collect variable name violations.
@@ -369,7 +375,9 @@ def validate_variable_name(name: str) -> list:
         # Record a violation for excessive name length.
         list_violations.append(
 # Format the length violation message for the variable.
-            f"Variable '{name}' exceeds {length_namemax} characters (length: {len(name)})."
+            f"Variable '{name}' exceeds {CLASPDefaults.length_namemax} characters "
+            # Format the length detail for the variable violation message.
+            f"(length: {len(name)})."
 # Close the violation message append call.
         )
     # Return the collected list of variable name violations.
@@ -377,7 +385,7 @@ def validate_variable_name(name: str) -> list:
 
 
 def validate_function_name(name: str, is_method: bool = False, is_astvisitor: bool = False) -> list:
-    """Validate a function or method name against CLASP 3.0 rules.
+    """Validate a function or method name against CLASP 3.1.1 rules.
     Returns a list of violation message strings.
     """
     # Initialize an empty list to collect function name violations.
@@ -426,7 +434,7 @@ def validate_function_name(name: str, is_method: bool = False, is_astvisitor: bo
         if group_item == "init" and name.startswith("_init_"):
             # Proceed to the next group without flagging the init prefix part.
             continue
-        # Check if the current group is a known forbidden abbreviation.
+        # Detect if this group uses a forbidden abbreviation in need of expansion.
         if group_item in abbreviations_forbidden:
             # Record a violation with the abbreviation and its correct full form.
             list_violations.append(
@@ -441,7 +449,9 @@ def validate_function_name(name: str, is_method: bool = False, is_astvisitor: bo
         # Record a violation for excessive function name length.
         list_violations.append(
 # Format the length violation message for the function.
-            f"Function '{name}' exceeds {length_namemax} characters (length: {len(name)})."
+            f"Function '{name}' exceeds {CLASPDefaults.length_namemax} characters "
+            # Format the length detail for the function violation message.
+            f"(length: {len(name)})."
 # Close the violation message append call.
         )
     # Check for vague verbs at the start of the function name.
@@ -461,7 +471,7 @@ def validate_function_name(name: str, is_method: bool = False, is_astvisitor: bo
 
 
 def validate_class_name(name: str) -> list:
-    """Validate a class name against CLASP 3.0 rules.
+    """Validate a class name against CLASP 3.1.1 rules.
     Returns a list of violation message strings.
     """
     # Initialize an empty list to collect class name violations.
@@ -480,7 +490,7 @@ def validate_class_name(name: str) -> list:
     for word_item in list_words:
         # Convert the word to lowercase for abbreviation lookup.
         string_lower = word_item.lower()
-        # Check if the lowercase word is a known forbidden abbreviation.
+        # Detect whether this word is a recognized abbreviation requiring full-word replacement.
         if string_lower in abbreviations_forbidden:
             # Record a violation with the abbreviation and its correct full form.
             list_violations.append(

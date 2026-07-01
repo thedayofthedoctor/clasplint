@@ -1,33 +1,35 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.log_checker — Validates log message usage against CLASP 3.0 conventions for pre-defined variables and exception chains.
+CLASPLint.log_checker -- Validates log messages per CLASP 3.1.1: variables and exception chains.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import ast
 from typing import List, Optional, Set
 
+from .naming_utils import validate_variable_name
 from .reporter import Violation
 
 # Define the set of recognized logging method names.
@@ -39,18 +41,22 @@ names_logmodule: Set[str] = {"logging", "logger", "log", "_logger", "__logger"}
 
 class LogChecker(ast.NodeVisitor):
     """
-    Walks the AST and validates log message usage against CLASP 3.0 conventions for pre-defined variables and exception chains.
+    Walks the AST and validates log message usage against CLASP 3.1.1 conventions
+    for pre-defined variables, group1_group2 naming, Chinese language, and exception chains.
 
     Public methods:
-        visit_Call — Detects inline string literals in logging calls and checks for missing exc_info on error-level calls.
-        visit_Try — Checks try-except handlers for proper logging and re-raise patterns in exception chains.
+        visit_Call -- Detects inline string literals in logging calls, checks for missing exc_info,
+                    validates log variable naming, and verifies Chinese-language log messages.
+        visit_Try -- Checks try-except handlers for logging and re-raise in exception chains.
 
     Private methods:
-        _init_source_line_function_ — Retrieves the source line text for a given AST node.
-        _init_add_violation_function_ — Records a log-related violation with full source context.
-        _init_log_method_function_ — Identifies whether a function call is a recognized logging method invocation.
-        _init_name_string_function_ — Extracts a dotted name string from an AST node for logger object resolution.
-        _init_handler_raise_function_ — Determines whether an exception handler re-raises the caught exception.
+        _init_source_line_function_ -- Retrieves the source line text for a given AST node.
+        _init_add_violation_function_ -- Records a log-related violation with full source context.
+        _init_log_method_function_ -- Identifies a function call as a recognized logging invocation.
+        _init_name_string_function_ -- Extracts a dotted name from AST node for logger resolution.
+        _init_handler_raise_function_ -- Checks if an exception handler re-raises the exception.
+        _init_chk_log_var_function_ -- Validates log variable names follow group1_group2 format.
+        _init_chk_log_lang_function_ -- Verifies log message content is written in Chinese.
     """
 
     def __init__(self, string_filepath: str, list_sourcelines: List[str]):
@@ -85,9 +91,11 @@ class LogChecker(ast.NodeVisitor):
         :rtype: str
         """
         # Return the source line if the node has a valid line number within bounds.
-        if node.lineno and node.lineno <= len(self.list_sourcelines):
+        int_lineno = getattr(node, 'lineno', 0)
+        # Guard against AST nodes that lack a line number attribute.
+        if int_lineno and int_lineno <= len(self.list_sourcelines):
             # Retrieve and return the corresponding source line text.
-            return self.list_sourcelines[node.lineno - 1]
+            return self.list_sourcelines[int_lineno - 1]
         # Return an empty string if the line number is unavailable or out of range.
         return ""
 
@@ -105,19 +113,22 @@ class LogChecker(ast.NodeVisitor):
         :type string_message: str
         """
         # Append a new Violation to the violations list with full context.
-        self.list_violations.append(Violation(
-            # Supply the file path where the violation was detected.
-            string_filepath=self.string_filepath,
-            # Supply the line number of the offending logging call.
-            int_linenumber=node.lineno,
-            # Supply the log violation category identifier.
-            string_category="log",
-            # Supply the human-readable violation message.
-            string_message=string_message,
-            # Supply the source line for contextual display.
-            string_sourceline=self._init_source_line_function_(node),
-        # Close the Violation data class instantiation.
-        ))
+        self.list_violations.append(
+            # Instantiate a Violation data class for this log convention issue.
+            Violation(
+                # Supply the file path where the violation was detected.
+                string_filepath=self.string_filepath,
+                # Supply the line number of the offending logging call.
+                int_linenumber=getattr(node, 'lineno', 0),
+                # Supply the log violation category identifier.
+                string_category="log",
+                # Supply the human-readable violation message.
+                string_message=string_message,
+                # Supply the source line for contextual display.
+                string_sourceline=self._init_source_line_function_(node),
+                # Close the Violation data class instantiation.
+            )
+        )
 
     def visit_Call(self, node: ast.Call) -> None:
         """
@@ -139,7 +150,7 @@ class LogChecker(ast.NodeVisitor):
             self.generic_visit(node)
             # Exit the visitor early for non-logging calls.
             return
-        # Check if the first argument is an inline string literal.
+        # Detect inline string literals in log messages, violating the pre-defined variable rule.
         if node.args:
             # Get the first positional argument.
             node_firstarg = node.args[0]
@@ -153,7 +164,7 @@ class LogChecker(ast.NodeVisitor):
                     f"Log message must be pre-defined as a variable, not an inline "
                     # Append the log method and truncated content for context.
                     f"string literal. Call: {string_logmethod}('{node_firstarg.value[:40]}...')"
-                # Close the violation function call.
+                    # Close the violation function call.
                 )
             # Detect inline f-strings in log calls.
             elif isinstance(node_firstarg, ast.JoinedStr):
@@ -165,7 +176,7 @@ class LogChecker(ast.NodeVisitor):
                     f"Log message must be pre-defined as a variable, not an inline "
                     # Append the log method name for context.
                     f"f-string. Call: {string_logmethod}(f'...')"
-                # Close the violation function call.
+                    # Close the violation function call.
                 )
             # Detect inline percent-formatted strings in log calls.
             elif isinstance(node_firstarg, ast.BinOp) and isinstance(node_firstarg.op, ast.Mod):
@@ -177,10 +188,22 @@ class LogChecker(ast.NodeVisitor):
                     f"Log message must be pre-defined as a variable, not an inline "
                     # Append the log method name and format indicator for context.
                     f"format string. Call: {string_logmethod}(... % ...)"
-                # Close the violation function call.
+                    # Close the violation function call.
                 )
         # Build a dictionary of keyword argument names for quick lookup.
         dict_keywords = {kw.arg: kw for kw in node.keywords}
+        # Extract the first positional argument for type-narrowed log checking.
+        node_firstarg = node.args[0] if node.args else None
+        # Validate the log message variable naming when a Name node is used.
+        if isinstance(node_firstarg, ast.Name):
+            # Delegate to the log variable naming validation method.
+            self._init_chk_log_var_function_(node, node_firstarg, string_logmethod)
+        # Validate that inline log message strings contain Chinese text.
+        if (isinstance(node_firstarg, ast.Constant)
+                # Additionally verify the Constant holds a string value.
+                and isinstance(node_firstarg.value, str)):
+            # Delegate to the log language validation method.
+            self._init_chk_log_lang_function_(node, node_firstarg, string_logmethod)
         # Check that error-level log calls include exc_info=True for traceback preservation.
         if string_logmethod in ("error", "critical", "exception"):
             # Verify the exc_info keyword argument is present.
@@ -193,7 +216,7 @@ class LogChecker(ast.NodeVisitor):
                     f"Log call '{string_logmethod}' should include exc_info=True to "
                     # Complete the message explaining the purpose of exc_info.
                     f"preserve the full traceback."
-                # Close the violation function call.
+                    # Close the violation function call.
                 )
         # Continue visiting child nodes.
         self.generic_visit(node)
@@ -215,7 +238,7 @@ class LogChecker(ast.NodeVisitor):
         for node_handler in node.handlers:
             # Walk the handler body looking for logging calls at any depth.
             for node_stmt in ast.walk(node_handler):
-                # Check if this statement is a logging call.
+                # Identify if this AST statement is a logger call inside an except handler.
                 if isinstance(node_stmt, ast.Call):
                     # Identify the logging method if this is a log call.
                     string_method = self._init_log_method_function_(node_stmt)
@@ -229,7 +252,7 @@ class LogChecker(ast.NodeVisitor):
             bool_reraises = self._init_handler_raise_function_(node_handler)
             # Report a violation for handlers that silently pass without logging.
             if not bool_haslog and not bool_reraises:
-                # Check if the handler body is a bare 'pass' statement.
+                # Detect a trivial handler whose only child is pass, indicating silent suppression.
                 if len(node_handler.body) == 1 and isinstance(node_handler.body[0], ast.Pass):
                     # Record a violation for a silent except handler.
                     self._init_add_violation_function_(
@@ -239,7 +262,7 @@ class LogChecker(ast.NodeVisitor):
                         "Except handler silently passes without logging. "
                         # Complete the message with the requirement for logging.
                         "Every except block must log the error."
-                    # Close the violation function call.
+                        # Close the violation function call.
                     )
         # Continue visiting child nodes.
         self.generic_visit(node)
@@ -265,20 +288,22 @@ class LogChecker(ast.NodeVisitor):
                 node_object = node.func.value
                 # Get the string representation of the object name.
                 string_objname = self._init_name_string_function_(node_object)
-                # Check if the object name matches a known logger variable.
+                # Resolve if the call's object is a recognized logger, confirming logging.
                 if string_objname and string_objname in names_logmodule:
                     # Return the recognized logging method name.
                     return node.func.attr
                 # Also accept self.logger and self._logger attribute chains.
                 if isinstance(node_object, ast.Attribute):
-                    # Check if the nested attribute is a logger name.
+                    # Verify the chained reference's innermost attribute names a known logger.
                     if node_object.attr in names_logmodule:
                         # Return the attribute name for nested logger references.
                         return node.func.attr
         # Return None if this is not a recognized logging call.
         return None
 
-    def _init_name_string_function_(self, node: ast.AST) -> Optional[str]:
+    # Mark this method as static since it extracts a name without instance state.
+    @staticmethod
+    def _init_name_string_function_(node: ast.AST) -> Optional[str]:
         """
         Extract a dotted name string from an AST node.
 
@@ -301,7 +326,9 @@ class LogChecker(ast.NodeVisitor):
         # Return None for unsupported node types.
         return None
 
-    def _init_handler_raise_function_(self, node_handler: ast.ExceptHandler) -> bool:
+    # Mark this method as static since it scans handler bodies without instance state.
+    @staticmethod
+    def _init_handler_raise_function_(node_handler: ast.ExceptHandler) -> bool:
         """
         Determine whether an exception handler re-raises the caught exception.
 
@@ -324,3 +351,95 @@ class LogChecker(ast.NodeVisitor):
                     return True
         # No re-raise statement found in the handler body.
         return False
+
+    def _init_chk_log_var_function_(
+            # Accept the call node for line-number extraction in violation reports.
+            self, node_call: ast.Call, node_name: ast.Name,
+            # Receive the logging method name for contextual violation messages.
+            string_logmethod: str
+            # Complete the private method signature for log variable checking.
+    ) -> None:
+        """
+        Validate that a log message variable name follows group1_group2 format.
+
+        Extracts the variable name from the AST Name node and delegates to the
+        CLASP 3.1.1 variable name validation utility. Each detected naming issue
+        is recorded as a log-category violation.
+
+        :param node_call: The logging call AST node for line number extraction.
+        :type node_call: ast.Call
+        :param node_name: The Name AST node containing the log message variable name.
+        :type node_name: ast.Name
+        :param string_logmethod: The logging method name for contextual messages.
+        :type string_logmethod: str
+        """
+        # Extract the variable name from the Name node.
+        string_varname = node_name.id
+        # Run the CLASP 3.1.1 variable name validation.
+        list_issues = validate_variable_name(string_varname)
+        # Record each detected naming violation with log category context.
+        for string_message in list_issues:
+            # Record a violation for the incorrectly named log variable.
+            self._init_add_violation_function_(
+                # Pass the call node for line number extraction.
+                node_call,
+                # Build the violation message with the variable and log method context.
+                f"Log message variable '{string_varname}' in {string_logmethod}() "
+                # Append the specific naming issue detected.
+                f"violates naming rules: {string_message}"
+                # Close the violation function call.
+            )
+
+    def _init_chk_log_lang_function_(
+            # Accept the call node for line-number extraction in violation reports.
+            self, node_call: ast.Call, node_constant: ast.Constant,
+            # Receive the logging method name for contextual violation messages.
+            string_logmethod: str
+            # Complete the private method signature for log language checking.
+    ) -> None:
+        """
+        Verify that inline log message content is written in Chinese.
+
+        Checks whether the string literal passed to a logging call contains
+        Chinese characters. Reports a violation when the log message appears
+        to be in a non-Chinese language.
+
+        :param node_call: The logging call AST node for line number extraction.
+        :type node_call: ast.Call
+        :param node_constant: The Constant AST node containing the log message string.
+        :type node_constant: ast.Constant
+        :param string_logmethod: The logging method name for contextual messages.
+        :type string_logmethod: str
+        """
+        # Extract the string value from the Constant node.
+        string_content = node_constant.value
+        # Guard against non-string Constant values at the type-checker level.
+        if not isinstance(string_content, str):
+            # Exit early for non-string constant values.
+            return
+        # Skip empty log message strings.
+        if not string_content:
+            # Exit early for empty log message content.
+            return
+        # Track whether any Chinese character was found in the log message.
+        bool_haschinese = False
+        # Iterate over each character in the log message.
+        for char_item in string_content:
+            # Check for Chinese characters in the Unicode CJK range.
+            if '\u4e00' <= char_item <= '\u9fff':
+                # Mark that a Chinese character was found.
+                bool_haschinese = True
+                # Exit the iteration loop once a Chinese character is found.
+                break
+        # Report a violation when no Chinese characters are found in the log message.
+        if not bool_haschinese:
+            # Record a violation for non-Chinese log message.
+            self._init_add_violation_function_(
+                # Pass the call node for line number extraction.
+                node_call,
+                # Build the violation message about non-Chinese log content.
+                f"Log message in {string_logmethod}() must be in Chinese. "
+                # Show the first portion of the non-Chinese log message.
+                f"Found: '{string_content[:40]}...'"
+                # Close the violation function call.
+            )

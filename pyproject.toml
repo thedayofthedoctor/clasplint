@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "CLASPLint"
-version = "0.2.0"
-description = "CLASP 3.0 / PEP 2606 Static Analysis Tool — enforces naming and comment conventions beyond PEP 8."
+version = "0.3.0"
+description = "CLASP 3.1.1 / PEP 2606 Static Analysis Tool — enforces naming and comment conventions beyond PEP 8."
 readme = "README.md"
 license = {text = "GPL-3.0-only"}
 authors = [

@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name="CLASPLint",
-    version="0.2.0",
+    version="0.3.0",
     
-    description="CLASP 3.0 / PEP 2606 Static Analysis Tool",
+    description="CLASP 3.1.1 / PEP 2606 Static Analysis Tool",
     
     author_email="thedayofthedo@gmail.com",
     

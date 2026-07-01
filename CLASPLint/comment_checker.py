@@ -1,39 +1,40 @@
+# -*- coding: utf-8 -*-
 """
 THIS FILE IS PART OF CLASPLINT BY MATT BELFAST BROWN
-CLASPLint.comment_checker — Validates that every code line has a preceding CLASP 3.0 formatted comment.
+CLASPLint.comment_checker -- Validates every code line has a preceding CLASP 3.1.1 comment.
 
 Author: Matt Belfast Brown
 Create Date: 2026-06-17
-Version Date: 2026-06-21
-Version: 0.2.0
+Version Date: 2026-07-01
+Version: 0.3.0
 
 THIS PROGRAM IS LICENSED UNDER GPL-3.0
 YOU SHOULD HAVE RECEIVED A COPY OF GPL-3.0 LICENSE.
 
 Copyright (C) 2026 Matt Belfast Brown
 
-This program is free software: you can redistribute it and/or modify
+CLASPLint is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, version 3 of the License.
 
-This program is distributed in the hope that it will be useful,
+CLASPLint is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty
 of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+along with CLASPLint.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import ast
 import io
+import re
 import tokenize
-from typing import List, Set
+from typing import List, Set, cast
 
 from .reporter import Violation
 
-# Define line-starting keywords that are exempt from the comment requirement.
-# Imports, class definitions, and function definitions are structural declarations.
+# Keywords that start lines are exempt from comments since they are structural declarations.
 keywords_exemptfromcomment = frozenset({
     # Include the standard import statement keyword.
     "import",
@@ -46,6 +47,22 @@ keywords_exemptfromcomment = frozenset({
 # Close the exempt keywords frozenset literal.
 })
 
+# Define weak comment starter patterns that merely restate code rather than explain intent.
+patterns_weakcomment = (
+    # Detect "Check if ..." and "Check whether ..." patterns that restate conditions.
+    r'^Check\s+if\b',
+    # Detect "Check whether ..." variant.
+    r'^Check\s+whether\b',
+# Close the weak comment pattern tuple.
+)
+
+# Compile the encoding declaration regex for detecting coding declarations.
+regex_encoding = re.compile(
+    # Match the standard PEP 263 encoding declaration format.
+    r'^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)',
+# Close the regex compilation call.
+)
+
 
 def _tokenize_source(string_source: str) -> List[tokenize.TokenInfo]:
     """Tokenize source code and return the list of tokens."""
@@ -55,15 +72,20 @@ def _tokenize_source(string_source: str) -> List[tokenize.TokenInfo]:
 
 class CommentChecker:
     """
-    Validates that every code line has a preceding comment and that all comments follow the CLASP 3.0 format.
+    Validates that every code line has a preceding comment in CLASP 3.1.1 format,
+    and the file header contains the required encoding declaration.
 
     Public methods:
-        run — Executes both the line-comment presence check and the comment format validation in sequence.
+        run -- Executes all comment-related checks in sequence.
 
     Private methods:
-        _init_line_comments_function_ — Verifies that every physical code line has a preceding comment per CLASP 3.0.
-        _init_comment_format_function_ — Validates that every comment follows the capitalized sentence format with a trailing period.
-        _init_docstring_line_function_ — Determines whether a given line number falls within a docstring expression.
+        _init_check_encoding_function_ -- Verifies the file has a PEP 263 encoding declaration.
+        _init_line_comments_function_ -- Verifies every code line has a prior CLASP 3.1.1 comment.
+        _init_comment_format_function_ -- Validates comment as capitalized sentence with period.
+        _init_chk_weak_comm_function_ -- Detects comments that restate code, not explain intent.
+        _init_scan_comm_lang_function_ -- Verifies comment text is written in English.
+        _init_chk_sym_comm_function_ -- Detects comments on lines where comments are forbidden.
+        _init_docstring_line_function_ -- Determines if a line number falls within a docstring.
     """
 
     def __init__(self, string_filepath: str, string_source: str):
@@ -89,19 +111,28 @@ class CommentChecker:
 
     def run(self) -> None:
         """
-        Run all comment format and presence checks.
+        Run all comment format, presence, encoding, language, and quality checks.
 
-        Executes both the line-comment presence check and the comment format validation
+        Executes the encoding declaration check, line-comment presence check, comment
+        format validation, weak comment detection, and comment language verification
         in sequence, populating the internal violations list with any issues found.
         """
+        # Verify that the file header contains a PEP 263 encoding declaration.
+        self._init_check_encoding_function_()
         # Check that every code line requiring a comment has one.
         self._init_line_comments_function_()
         # Check that every comment follows the required format.
         self._init_comment_format_function_()
+        # Detect weak comments that merely restate code rather than explain intent.
+        self._init_chk_weak_comm_function_()
+        # Verify that comment text is written in English.
+        self._init_scan_comm_lang_function_()
+        # Detect comments placed on pure-symbol lines where comments are forbidden.
+        self._init_chk_sym_comm_function_()
 
     def _init_line_comments_function_(self) -> None:
         """
-        Verify that every physical code line has a preceding comment per CLASP 3.0.
+        Verify that every physical code line has a preceding comment per CLASP 3.1.1.
 
         Tokenizes the source code to identify code lines and comment lines, then checks
         that every non-exempt code line has a comment on the same line or the line before.
@@ -159,6 +190,10 @@ class CommentChecker:
             if self._init_docstring_line_function_(int_lineno):
                 # Exit the loop iteration for docstring lines.
                 continue
+            # Skip lines that contain no letters (pure symbol lines).
+            if not re.search(r'[a-zA-Z]', string_linetext):
+                # Exit the loop iteration for pure symbol lines exempt from comment requirement.
+                continue
             # Determine whether a comment exists on the same line or the previous line.
             bool_hascomment = int_lineno in set_commentlines
             # Check the previous non-blank line as an alternative comment location.
@@ -207,8 +242,9 @@ class CommentChecker:
         Verify that every comment follows the 'Capitalized sentence.' format.
 
         Tokenizes the source and inspects each comment token for compliance with the
-        CLASP 3.0 comment format: the comment must start with '# ' (hash and space),
-        the text must begin with a capital letter, and it must end with a period.
+        CLASP 3.1.1 comment format: each comment must be a self-contained sentence
+        starting with '# ', followed by a capital letter, and ending with a period.
+        Multi-line comment blocks are prohibited; each comment line stands alone.
         """
         # Attempt to tokenize the source; skip if tokenization fails.
         try:
@@ -218,7 +254,37 @@ class CommentChecker:
         except tokenize.TokenError:
             # Exit the method early when tokenization fails.
             return
-        # Check each comment token for format compliance.
+        # Build the set of comment line numbers for block detection.
+        set_commentlinenos = set()
+        # First pass: collect all valid comment line numbers.
+        for token_item in list_tokens:
+            # Skip non-comment tokens.
+            if token_item.type != tokenize.COMMENT:
+                # Proceed to the next token.
+                continue
+            # Get the raw comment text.
+            string_comment = token_item.string
+            # Skip comments missing the required '# ' prefix.
+            if not string_comment.startswith("# "):
+                # Exclude malformed comments from block detection.
+                continue
+            # Extract the content after '# '.
+            string_content = string_comment[2:].strip()
+            # Skip empty and special marker comments from block detection.
+            if not string_content:
+                # Exclude empty placeholder comments.
+                continue
+            # Skip special markers from block detection.
+            if (string_content.startswith("!") or string_content.startswith("type:") or
+                    # Filter noqa and encoding marker comments.
+                    string_content.startswith("noqa") or string_content.startswith("-*-") or
+                    # Filter coding declaration comments.
+                    string_content.startswith("coding")):
+                # Exclude special marker comments.
+                continue
+            # Record this line as part of a comment block.
+            set_commentlinenos.add(token_item.start[0])
+        # Second pass: check each comment for format compliance.
         for token_item in list_tokens:
             # Skip non-comment tokens.
             if token_item.type != tokenize.COMMENT:
@@ -242,11 +308,9 @@ class CommentChecker:
                         f"Comment must start with '# ' (hash, space). "
                         # Show the first 20 characters of the malformed comment.
                         f"Found: '{string_comment[:20]}...'"
-                    # Close the parenthesized message string.
                     ),
                     # Supply the source line for contextual display.
                     string_sourceline=self.list_sourcelines[token_item.start[0] - 1],
-                # Close the Violation data class instantiation.
                 ))
                 # Skip further checks on malformed comments.
                 continue
@@ -256,10 +320,36 @@ class CommentChecker:
             if not string_content:
                 # Proceed to the next token for empty comment content.
                 continue
-            # Skip special marker comments like shebang, type: ignore, and noqa.
-            if string_content.startswith("!") or string_content.startswith("type:") or string_content.startswith("noqa"):
+            # Skip special markers like shebang, type: ignore, noqa, and encoding declarations.
+            if (string_content.startswith("!") or string_content.startswith("type:") or
+                    # Include encoding declaration patterns in the special marker check.
+                    string_content.startswith("noqa") or string_content.startswith("-*-") or
+                    # Accept the standard coding declaration format as a special marker.
+                    string_content.startswith("coding")):
                 # Proceed to the next token for special marker comments.
                 continue
+            # Detect multi-line comment blocks: each comment must be self-contained.
+            int_lineno = token_item.start[0]
+            # Flag a comment that continues from the previous comment line.
+            if (int_lineno - 1) in set_commentlinenos:
+                # Record a violation for multi-line comment continuation.
+                self.list_violations.append(Violation(
+                    # Supply the file path where the continuation comment was detected.
+                    string_filepath=self.string_filepath,
+                    # Supply the line number of the continuation comment.
+                    int_linenumber=int_lineno,
+                    # Supply the comment violation category identifier.
+                    string_category="comment",
+                    # Build the violation message about the multi-line comment.
+                    string_message=(
+                        # Describe the single-line comment requirement.
+                        f"Comment must be a single self-contained line. "
+                        # Indicate that this line continues a prior comment.
+                        f"Multi-line comment blocks are not permitted."
+                    ),
+                    # Supply the source line for contextual display.
+                    string_sourceline=self.list_sourcelines[int_lineno - 1],
+                ))
             # Check that the comment text starts with a capital letter.
             if string_content[0].islower():
                 # Record a violation for lowercase start.
@@ -267,7 +357,7 @@ class CommentChecker:
                     # Supply the file path where the malformed comment was detected.
                     string_filepath=self.string_filepath,
                     # Supply the line number of the malformed comment.
-                    int_linenumber=token_item.start[0],
+                    int_linenumber=int_lineno,
                     # Supply the comment violation category identifier.
                     string_category="comment",
                     # Build the violation message describing the format issue.
@@ -276,11 +366,9 @@ class CommentChecker:
                         f"Comment text must start with a capital letter. "
                         # Show the first 30 characters of the malformed content.
                         f"Found: '{string_content[:30]}...'"
-                    # Close the parenthesized message string.
                     ),
                     # Supply the source line for contextual display.
-                    string_sourceline=self.list_sourcelines[token_item.start[0] - 1],
-                # Close the Violation data class instantiation.
+                    string_sourceline=self.list_sourcelines[int_lineno - 1],
                 ))
             # Check that the comment text ends with a period or other valid punctuation.
             if not string_content.endswith("."):
@@ -291,7 +379,7 @@ class CommentChecker:
                         # Supply the file path where the malformed comment was detected.
                         string_filepath=self.string_filepath,
                         # Supply the line number of the malformed comment.
-                        int_linenumber=token_item.start[0],
+                        int_linenumber=int_lineno,
                         # Supply the comment violation category identifier.
                         string_category="comment",
                         # Build the violation message describing the format issue.
@@ -300,10 +388,71 @@ class CommentChecker:
                             f"Comment must end with a period. "
                             # Show the first 40 characters of the malformed content.
                             f"Found: '{string_content[:40]}'"
+                        ),
+                        # Supply the source line for contextual display.
+                        string_sourceline=self.list_sourcelines[int_lineno - 1],
+                    ))
+
+    def _init_chk_sym_comm_function_(self) -> None:
+        """
+        Detect comments placed on pure-symbol lines where comments are forbidden.
+
+        Scans all comment tokens and checks whether the source line containing the
+        comment consists solely of non-letter characters. Per CLASP 3.1.1 rule 12,
+        pure-symbol lines must not carry comments.
+        """
+        # Attempt to tokenize the source; skip if tokenization fails.
+        try:
+            # Tokenize the full source code for symbol-line comment detection.
+            list_tokens = _tokenize_source(self.string_source)
+        # Return early if the source cannot be tokenized.
+        except tokenize.TokenError:
+            # Exit the method early when tokenization fails.
+            return
+        # Inspect each comment token for placement on pure-symbol lines.
+        for token_item in list_tokens:
+            # Skip non-comment tokens.
+            if token_item.type != tokenize.COMMENT:
+                # Proceed to the next token in the loop.
+                continue
+            # Get the line number of the comment token.
+            int_lineno = token_item.start[0]
+            # Retrieve the full source line at this line number.
+            if int_lineno > len(self.list_sourcelines):
+                # Skip out-of-bounds line numbers.
+                continue
+            # Get the raw text of the commented line.
+            string_linetext = self.list_sourcelines[int_lineno - 1]
+            # Extract the portion of the line before the comment for symbol checking.
+            string_beforecomment = string_linetext.split("#")[0] if "#" in string_linetext else ""
+            # A pure-symbol line has non-whitespace content before the comment but no letters.
+            string_body = string_beforecomment.strip()
+            # Skip pure comment lines where there is no code body before the hash.
+            if not string_body:
+                # Continue to the next token for lines that are purely comment lines.
+                continue
+            # Detect pure-symbol lines: non-whitespace content present but no letters.
+            if not re.search(r'[a-zA-Z]', string_body):
+                # Get the comment text for the violation message.
+                string_comment = token_item.string
+                # Record a violation for a comment on a pure-symbol line.
+                self.list_violations.append(Violation(
+                        # Supply the file path where the violation was detected.
+                        string_filepath=self.string_filepath,
+                        # Supply the line number of the offending comment.
+                        int_linenumber=int_lineno,
+                        # Supply the comment violation category identifier.
+                        string_category="comment",
+                        # Build the violation message about the forbidden comment.
+                        string_message=(
+                            # Describe the prohibition on comments for pure-symbol lines.
+                            f"Pure-symbol lines must not carry comments. "
+                            # Show the offending comment content.
+                            f"Remove or relocate: '{string_comment.strip()[:40]}'"
                         # Close the parenthesized message string.
                         ),
                         # Supply the source line for contextual display.
-                        string_sourceline=self.list_sourcelines[token_item.start[0] - 1],
+                        string_sourceline=string_linetext,
                     # Close the Violation data class instantiation.
                     ))
 
@@ -340,17 +489,214 @@ class CommentChecker:
                     list_body = node.body
                     # Verify the body exists and the first statement is an expression.
                     if list_body and isinstance(list_body[0], ast.Expr):
-                        # Get the expression node.
-                        node_expression = list_body[0]
+                        # Narrow the first body statement to an expression node.
+                        node_expression = cast(ast.Expr, list_body[0])
+                        # Extract the expression value for string-constant verification.
+                        node_exprvalue = node_expression.value
                         # Verify the expression value is a string constant.
-                        if isinstance(node_expression.value, ast.Constant) and isinstance(node_expression.value.value, str):
+                        if (isinstance(node_exprvalue, ast.Constant)
+                                # Additionally verify the contained value is a string literal.
+                                and isinstance(node_exprvalue.value, str)):
                             # Get the starting line of the docstring.
                             int_startline = node_expression.lineno
                             # Get the ending line, defaulting to start line if not set.
-                            int_endline = node_expression.end_lineno or int_startline
-                            # Check whether the queried line falls within the docstring range.
+                            int_endline = getattr(node_expression, 'end_lineno', int_startline)
+                            # Determine if the inspected line is inside a docstring to skip checks.
                             if int_startline <= int_lineno <= int_endline:
                                 # The line is part of a docstring.
                                 return True
         # The line is not part of any docstring.
         return False
+
+    def _init_check_encoding_function_(self) -> None:
+        """
+        Verify that the file header contains a PEP 263 encoding declaration.
+
+        Checks the first two lines of the source file for an encoding declaration
+        in the format '# -*- coding: utf-8 -*-' or '# coding: utf-8'. The first line
+        is skipped if it contains a shebang.
+        """
+        # Split the source into lines for header inspection.
+        list_lines = self.list_sourcelines
+        # Return early for empty files.
+        if not list_lines:
+            # Exit early for empty source files.
+            return
+        # Start checking from the first line.
+        int_startindex = 0
+        # Skip the first line if it is a shebang.
+        if list_lines[0].strip().startswith("#!"):
+            # Move to the second line when a shebang is present.
+            int_startindex = 1
+        # Determine the search range for the encoding declaration.
+        int_endindex = min(int_startindex + 2, len(list_lines))
+        # Track whether an encoding declaration was found.
+        bool_hasencoding = False
+        # Search for the encoding declaration in the first two lines.
+        for int_index in range(int_startindex, int_endindex):
+            # Attempt to match the encoding declaration pattern.
+            if regex_encoding.match(list_lines[int_index]):
+                # Mark that the encoding declaration was found.
+                bool_hasencoding = True
+                # Exit the search loop once found.
+                break
+        # Report a violation if no encoding declaration was found.
+        if not bool_hasencoding:
+            # Record a missing encoding declaration violation.
+            self.list_violations.append(Violation(
+                # Supply the file path where the violation was detected.
+                string_filepath=self.string_filepath,
+                # Report the violation at line 1 or 2 depending on shebang presence.
+                int_linenumber=int_startindex + 1,
+                # Supply the comment violation category identifier.
+                string_category="comment",
+                # Build the violation message about the missing encoding declaration.
+                string_message=(
+                    # Describe the required encoding declaration format.
+                    "File is missing a PEP 263 encoding declaration. "
+                    # Specify the expected format.
+                    "Add '# -*- coding: utf-8 -*-' after the shebang or at the top of the file."
+                # Close the parenthesized message string.
+                ),
+                # Supply the source line for contextual display.
+                string_sourceline=(
+                    # Provide the source line text or an empty fallback when index is out of range.
+                    list_lines[int_startindex] if int_startindex < len(list_lines) else ""),
+            # Close the Violation data class instantiation.
+            ))
+
+    def _init_chk_weak_comm_function_(self) -> None:
+        """
+        Detect weak comments that merely restate code rather than explain intent.
+
+        Scans all comment tokens for patterns like 'Check if ...' or 'Check whether ...'
+        that only paraphrase the code condition instead of providing meaningful context.
+        """
+        # Compile the weak comment patterns into regex objects for matching.
+        list_weakpatterns = [re.compile(p, re.IGNORECASE) for p in patterns_weakcomment]
+        # Attempt to tokenize the source; skip if tokenization fails.
+        try:
+            # Tokenize the full source code for weak comment detection.
+            list_tokens = _tokenize_source(self.string_source)
+        # Return early if the source cannot be tokenized.
+        except tokenize.TokenError:
+            # Exit the method early when tokenization fails.
+            return
+        # Inspect each comment token for weak patterns.
+        for token_item in list_tokens:
+            # Skip non-comment tokens.
+            if token_item.type != tokenize.COMMENT:
+                # Proceed to the next token in the loop.
+                continue
+            # Get the raw comment text including the leading '#'.
+            string_comment = token_item.string
+            # Skip comments that do not start with '# ' for weak check.
+            if not string_comment.startswith("# "):
+                # Proceed to the next token for malformed comments.
+                continue
+            # Extract the content after '# '.
+            string_content = string_comment[2:].strip()
+            # Skip empty comment content.
+            if not string_content:
+                # Proceed to the next token for empty comments.
+                continue
+            # Check each weak comment pattern against the comment content.
+            for regex_pattern in list_weakpatterns:
+                # Detect a match of the weak comment pattern.
+                if regex_pattern.match(string_content):
+                    # Record a violation for the weak comment.
+                    self.list_violations.append(Violation(
+                        # Supply the file path where the weak comment was detected.
+                        string_filepath=self.string_filepath,
+                        # Supply the line number of the weak comment.
+                        int_linenumber=token_item.start[0],
+                        # Supply the comment violation category identifier.
+                        string_category="comment",
+                        # Build the violation message describing the weak comment issue.
+                        string_message=(
+                            # Describe the problem with weak comment patterns.
+                            f"Weak comment: '{string_content[:50]}...' merely restates code. "
+                            # Provide guidance for writing better comments.
+                            f"Comments must explain intent, not paraphrase conditions."
+                        # Close the parenthesized message string.
+                        ),
+                        # Supply the source line for contextual display.
+                        string_sourceline=self.list_sourcelines[token_item.start[0] - 1],
+                    # Close the Violation data class instantiation.
+                    ))
+                    # Stop checking other patterns once a match is found.
+                    break
+
+    def _init_scan_comm_lang_function_(self) -> None:
+        """
+        Verify that comment text is written in English.
+
+        Scans all comment tokens and detects non-ASCII characters that suggest
+        non-English text. Reports a violation when non-English characters are found.
+        """
+        # Attempt to tokenize the source; skip if tokenization fails.
+        try:
+            # Tokenize the full source code for comment language detection.
+            list_tokens = _tokenize_source(self.string_source)
+        # Return early if the source cannot be tokenized.
+        except tokenize.TokenError:
+            # Exit the method early when tokenization fails.
+            return
+        # Inspect each comment token for non-English text.
+        for token_item in list_tokens:
+            # Skip non-comment tokens.
+            if token_item.type != tokenize.COMMENT:
+                # Proceed to the next token in the loop.
+                continue
+            # Get the raw comment text including the leading '#'.
+            string_comment = token_item.string
+            # Skip comments that do not start with '# '.
+            if not string_comment.startswith("# "):
+                # Proceed to the next token for malformed comments.
+                continue
+            # Extract the content after '# '.
+            string_content = string_comment[2:].strip()
+            # Skip empty comment content.
+            if not string_content:
+                # Proceed to the next token for empty comments.
+                continue
+            # Skip special marker comments that use fixed-format non-English patterns.
+            if (string_content.startswith("!") or string_content.startswith("type:") or
+                # Include encoding declaration patterns in the non-English exemption.
+                string_content.startswith("noqa") or string_content.startswith("-*-") or
+                # Accept the standard coding declaration format as exempt.
+                string_content.startswith("coding")):
+                # Proceed to the next token for special marker comments.
+                continue
+            # Detect non-ASCII characters indicating non-English text.
+            bool_hasnonenglish = False
+            # Iterate over each character in the comment content.
+            for char_item in string_content:
+                # Check for characters outside the ASCII range.
+                if ord(char_item) > 127:
+                    # Mark that non-English characters were detected.
+                    bool_hasnonenglish = True
+                    # Exit the character loop once non-English is found.
+                    break
+            # Report a violation when non-English characters are found in a comment.
+            if bool_hasnonenglish:
+                # Record a violation for non-English comment text.
+                self.list_violations.append(Violation(
+                    # Supply the file path where the non-English comment was detected.
+                    string_filepath=self.string_filepath,
+                    # Supply the line number of the non-English comment.
+                    int_linenumber=token_item.start[0],
+                    # Supply the comment violation category identifier.
+                    string_category="comment",
+                    # Build the violation message about non-English comment text.
+                    string_message=(
+                        # Describe the language requirement for comments.
+                        f"Comment must be written in English. "
+                        # Show the first portion of the non-English comment.
+                        f"Non-ASCII characters found in: '{string_content[:40]}...'"
+                    # Close the parenthesized message string.
+                    ),
+                    # Supply the source line for contextual display.
+                    string_sourceline=self.list_sourcelines[token_item.start[0] - 1],
+                # Close the Violation data class instantiation.
+                ))
