@@ -89,26 +89,26 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
 
 ## CLASP 3.1.1 / PEP 2606 Rules Summary
 
-| Category   | Rule |
-|------------|------|
-| Variable   | `group1_group2`, one underscore, all lowercase, no abbreviations, ≤30 chars |
-| Boolean    | `is_` or `has_` prefix |
-| Dict Key   | PascalCase, full spelling, acronyms uppercase (GPS, UTM, XML, etc.) |
-| Class      | PascalCase |
-| Function   | snake_case, specific verb, ≤30 chars |
-| Method     | Public: short snake_case; Private: `_init_X_function_` ≤30 chars |
-| Comment    | Every physical line: `# Capitalized sentence ending with period.` (import/class/def exempt) |
-| Log        | Messages as variables, proper `try-except` logging chain, `exc_info=True` |
-| Docstring  | Presence required; Sphinx `:param/:type/:return` format for methods with detail section |
-| Encoding   | `# -*- coding: utf-8 -*-` required at file top (line 1 or 2 after shebang) |
-| Symbol Line| Pure-symbol lines (no letters) are comment-exempt and must not carry comments |
-| Multi-line | Each comment must be a single self-contained line; blocks are forbidden |
-| Weak Comment| Comments must explain intent, not paraphrase conditions (no "Check if...") |
-| Comment Lang| All comments must be in English (ASCII only) |
-| Log Lang   | Log messages must be in Chinese |
-| Log Variable| Log message variables must follow `group1_group2` naming format |
-| File Doc   | File-level docstring with project, author, version, license metadata |
-| Class Doc  | Class docstring must list Public methods and Private methods sections |
+| Category     | Rule                                                                                        |
+|--------------|---------------------------------------------------------------------------------------------|
+| Variable     | `group1_group2`, one underscore, all lowercase, no abbreviations, ≤30 chars                 |
+| Boolean      | `is_` or `has_` prefix                                                                      |
+| Dict Key     | PascalCase, full spelling, acronyms uppercase (GPS, UTM, XML, etc.)                         |
+| Class        | PascalCase                                                                                  |
+| Function     | snake_case, specific verb, ≤30 chars                                                        |
+| Method       | Public: short snake_case; Private: `_init_X_function_` ≤30 chars                            |
+| Comment      | Every physical line: `# Capitalized sentence ending with period.` (import/class/def exempt) |
+| Log          | Messages as variables, proper `try-except` logging chain, `exc_info=True`                   |
+| Docstring    | Presence required; Sphinx `:param/:type/:return` format for methods with detail section     |
+| Encoding     | `# -*- coding: utf-8 -*-` required at file top (line 1 or 2 after shebang)                  |
+| Symbol Line  | Pure-symbol lines (no letters) are comment-exempt and must not carry comments               |
+| Multi-line   | Each comment must be a single self-contained line; blocks are forbidden                     |
+| Weak Comment | Comments must explain intent, not paraphrase conditions (no "Check if...")                  |
+| Comment Lang | All comments must be in English (ASCII only)                                                |
+| Log Lang     | Log messages must be in Chinese                                                             |
+| Log Variable | Log message variables must follow `group1_group2` naming format                             |
+| File Doc     | File-level docstring with project, author, version, license metadata                        |
+| Class Doc    | Class docstring must list Public methods and Private methods sections                       |
 
 ## Python Version Support
 
@@ -215,26 +215,26 @@ CLASPLint: 30 violation(s) in 1 of 1 file(s).
 
 ## CLASP 3.1.1 / PEP 2606 规则速查
 
-| 类别       | 规则 |
-|------------|------|
-| 变量       | `group1_group2`，有且仅有一个下划线，全部小写，禁止缩写，≤30 字符 |
-| 布尔值     | `is_` 或 `has_` 前缀 |
-| 字典键     | PascalCase 驼峰式，完整拼写，专有缩写大写（GPS、UTM、XML 等） |
-| 类名       | PascalCase |
-| 函数名     | snake_case，使用具体动词，≤30 字符 |
-| 方法       | 公共：简短 snake_case；私有：`_init_X_function_` ≤30 字符 |
-| 注释       | 每条物理行：`# Capitalized sentence ending with period.`（import/class/def 豁免） |
-| 日志       | 消息预定义为变量，完整 `try-except` 日志链，`exc_info=True` |
-| 文档字符串 | 必须存在；方法需 Sphinx `:param/:type/:return` 格式并包含详细段落 |
-| 编码声明   | 文件顶部须有 `# -*- coding: utf-8 -*-`（第1行或shebang后第2行） |
-| 符号行     | 纯符号行（无字母）免注释且禁止带注释 |
-| 单行注释   | 每条注释为独立单行句子；禁止多行注释块 |
-| 弱注释     | 注释须解释意图，不得仅复述代码（禁止 "Check if..."） |
-| 注释语言   | 所有注释须使用英文（仅 ASCII 字符） |
-| 日志语言   | 日志消息须使用中文 |
-| 日志变量   | 日志消息变量名须符合 `group1_group2` 格式 |
-| 文件文档   | 文件级 docstring 须含项目名、作者、版本、许可证元数据 |
-| 类文档     | 类 docstring 须列出 Public methods 和 Private methods 段 |
+| 类别    | 规则                                                                      |
+|-------|-------------------------------------------------------------------------|
+| 变量    | `group1_group2`，有且仅有一个下划线，全部小写，禁止缩写，≤30 字符                              |
+| 布尔值   | `is_` 或 `has_` 前缀                                                       |
+| 字典键   | PascalCase 驼峰式，完整拼写，专有缩写大写（GPS、UTM、XML 等）                               |
+| 类名    | PascalCase                                                              |
+| 函数名   | snake_case，使用具体动词，≤30 字符                                                |
+| 方法    | 公共：简短 snake_case；私有：`_init_X_function_` ≤30 字符                          |
+| 注释    | 每条物理行：`# Capitalized sentence ending with period.`（import/class/def 豁免） |
+| 日志    | 消息预定义为变量，完整 `try-except` 日志链，`exc_info=True`                            |
+| 文档字符串 | 必须存在；方法需 Sphinx `:param/:type/:return` 格式并包含详细段落                        |
+| 编码声明  | 文件顶部须有 `# -*- coding: utf-8 -*-`（第1行或shebang后第2行）                       |
+| 符号行   | 纯符号行（无字母）免注释且禁止带注释                                                      |
+| 单行注释  | 每条注释为独立单行句子；禁止多行注释块                                                     |
+| 弱注释   | 注释须解释意图，不得仅复述代码（禁止 "Check if..."）                                       |
+| 注释语言  | 所有注释须使用英文（仅 ASCII 字符）                                                   |
+| 日志语言  | 日志消息须使用中文                                                               |
+| 日志变量  | 日志消息变量名须符合 `group1_group2` 格式                                           |
+| 文件文档  | 文件级 docstring 须含项目名、作者、版本、许可证元数据                                        |
+| 类文档   | 类 docstring 须列出 Public methods 和 Private methods 段                      |
 
 ## Python 版本支持
 
