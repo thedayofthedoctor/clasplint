@@ -7,7 +7,7 @@ name = "CLASPLint"
 version = "0.3.0"
 description = "CLASP 3.1.1 / PEP 2606 Static Analysis Tool — enforces naming and comment conventions beyond PEP 8."
 readme = "README.md"
-license = "GPL-3.0-only"
+license = {text = "GPL-3.0-only"}
 authors = [
     {name = "Matt Belfast Brown", email = "thedayofthedo@gmail.com"},
 ]
